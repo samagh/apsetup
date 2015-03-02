@@ -50,7 +50,7 @@ dhcp-option=252,http://rpi:8080/wpad.dat
 address=/rpi/$WLAN_ADDR
 EOF
 
-	sudo PATH=$software_path:$PATH $software_path/bin/dnsmasq -C $software_path/etc/dnsmasq.conf &> /dev/null
+	sudo PATH=$software_path:$PATH $software_path/sbin/dnsmasq -C $software_path/etc/dnsmasq.conf &> /dev/null
 }
 
 # Generate hostpad file and start daemon
@@ -71,7 +71,7 @@ wpa_pairwise=TKIP
 rsn_pairwise=CCMP
 EOF
 
-	sudo PATH=$software_path:$PATH $software_path/bin/hostapd -B $software_path/etc/hostapd.conf &> /dev/null
+	sudo PATH=$software_path:$PATH $software_path/usr/local/bin/hostapd -B $software_path/etc/hostapd.conf &> /dev/null
 }
 
 # Enable routing and add iptables rules to enable masquerading
