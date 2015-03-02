@@ -6,3 +6,8 @@ My own Raspberry Pi Access Point. Work still in progress.
 * Enter in the new directory and run build_tools.sh script to get source code and compile binaries
 * If not using pi user, change software_path variable in bin/apsetup script
 * Add /home/pi/apsetup/bin/apsetup to /etc/rc.local
+
+# Coming soon
+* Transparent proxy with Tor support
+* VPN (vpnc) client
+* Simple web page to configure and/or reload configuration
