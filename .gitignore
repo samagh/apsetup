@@ -1,0 +1,14 @@
+# Skip anything 
+*
+
+# Don't skipt .gitignore file
+!.gitignore
+
+# Don't skip apsetup script
+!bin/apsetup
+
+# Don't skip apsetup's config file
+!etc/apsetup.conf
+
+# Don't skip build script
+build

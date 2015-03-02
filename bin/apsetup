@@ -1,0 +1,107 @@
+#!/bin/bash
+
+# Set Software path and versions
+software_path=/home/pi/apsetup
+
+#####
+##### YOU SHOULDN'T CHANGE ANYTHING BELOW THIS LINE
+#####
+
+# Set PATH
+export PATH=$software_path:$PATH
+
+# Configure interface with rescue and regular IP
+function configureWAN() {
+	ip addr add $WAN_RESCUE_ADDR/$WAN_RESCUE_PREFIX dev $WAN_IFACE:1
+
+	if [ $WAN_ADDR == "auto" ]; then
+		# Try DHCP
+		dhclient eth0
+	else
+		ip addr add $WAN_ADDR/$WAN_PREFIX dev $WAN_IFACE
+		ip link set $WAN_IFACE up
+
+		echo nameserver $WAN_DNS > /etc/resolv.conf
+		ip route add default via $WAN_GATEWAY
+	fi
+}
+
+function configureWLAN() {
+	ip addr add $WLAN_ADDR/$WLAN_PREFIX dev $WLAN_IFACE
+	ip link set $WLAN_IFACE up
+}
+
+# Generate dnsmasq.conf file and start daemon
+function dnsmasqStart() {
+	cat << EOF > $software_path/etc/dnsmasq.conf
+# Do not edit locally
+interface=$WLAN_IFACE
+listen-address=$WLAN_ADDR
+domain-needed
+bogus-priv
+no-poll
+local=/$WLAN_DNS_DOMAIN/
+no-hosts
+expand-hosts
+domain=$WLAN_DNS_DOMAIN
+dhcp-range=$WLAN_DHCP_RANGE_START,$WLAN_DHCP_RANGE_END,24h
+dhcp-option=option:router,$WLAN_ADDR
+dhcp-option=252,http://rpi:8080/wpad.dat
+address=/rpi/$WLAN_ADDR
+EOF
+
+	sudo PATH=$software_path:$PATH $software_path/bin/dnsmasq -C $software_path/etc/dnsmasq.conf &> /dev/null
+}
+
+# Generate hostpad file and start daemon
+function hostapdStart() {
+	cat << EOF > $software_path/etc/hostapd.conf
+# Do not edit locally
+interface=$WLAN_IFACE
+ssid=$WLAN_HOSTAPD_SSID
+hw_mode=g
+channel=1
+auth_algs=$WLAN_HOSTAPD_CHANNEL
+driver=rtl871xdrv
+
+wpa=3
+wpa_passphrase=$WLAN_HOSTAPD_PASSPHRASE
+wpa_key_mgmt=WPA-PSK
+wpa_pairwise=TKIP
+rsn_pairwise=CCMP
+EOF
+
+	sudo PATH=$software_path:$PATH $software_path/bin/hostapd -B $software_path/etc/hostapd.conf &> /dev/null
+}
+
+# Enable routing and add iptables rules to enable masquerading
+function enableNAT() {
+	iptables -F
+	iptables -t nat -F
+	iptables -t nat -A POSTROUTING -o $WAN_IFACE -j MASQUERADE
+	iptables -A FORWARD -i $WAN_IFACE -o $WLAN_IFACE -m state --state RELATED,ESTABLISHED -j ACCEPT
+	iptables -A FORWARD -i $WLAN_IFACE -o $WAN_IFACE -j ACCEPT
+
+	sysctl -q -w net.ipv4.ip_forward=1
+}
+
+# Load configuration file
+function loadConfig() {
+	source $software_path/etc/apsetup.conf
+}
+
+# Load configuration file
+loadConfig
+
+# Configure interfaces
+configureWLAN
+configureWAN
+
+# Configure and start dnsmasq
+dnsmasqStart
+
+# Configure and start hostapd
+hostapdStart
+
+# Enable routing and NAT
+enableNAT

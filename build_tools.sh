@@ -38,8 +38,20 @@ function buildDnsmasq() {
 	make && make install
 }
 
+# Build hostapd (this may be different for your wifi adapter)
+function buildHostapd() {
+	cd ${_tmpdir}
+	${_wget} https://starterkit-org.googlecode.com/files/wpa_supplicant_hostapd-0.8_rtw_r7475.20130812.tar.gz
+	tar xfz wpa_supplicant_hostapd-0.8_rtw_r7475.20130812.tar.gz
+	cd wpa_supplicant_hostapd-0.8_rtw_r7475.20130812/hostapd
+	sed -i "1iDESTDIR=${_curdir}" Makefile
+	make && make install
+}
+
 
 rm -fr ${_tmpdir} && mkdir -p ${_tmpdir}
-#buildCntlm
-#buildCorkscrew
+buildCntlm
+buildCorkscrew
 buildDnsmasq
+buildHostapd
+
